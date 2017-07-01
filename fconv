@@ -1,0 +1,198 @@
+#!/bin/bash -f
+
+###############################################################################
+#
+# fconv - convert text file between ascii -  hex - bin representation
+# Copyright (C) 2017 Jorge Carpio
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+###############################################################################
+
+## Default values
+FROM=""
+TO=""
+OUTF=/dev/stdout
+INPF=/dev/stdin
+ERR=""
+COL=0
+
+function printUsage {
+	echo ""
+	if [ "$ERR" != "" ]; then
+		echo "Error: $ERR"
+		echo ""
+	fi
+	echo "Usage: `basename "$0"` -i input_file [ -f from_format ] -t to_format [ -o output file ]"
+	echo "Swiss army knife for ascii - hex - bin conversion of text files"
+	printf "\t-i\tFile to convert\n"
+	printf "\t-f\tFormat of file to convert. Automatically determined when not specified\n"
+	printf "\t-o\tWrite output to this file. Stdout when not specified\n"
+	printf "\t-t\tOutput format\n"
+	printf "\t-c\tNumber of output chars per line\n"
+	printf "\t-h\tPrint this help\n"
+	echo ""
+	exit
+}
+
+function autodetectFileFormat {
+	chars=`cat "$1" | tr -d " " | tr -d "\n" | sed 's/\(.\{1\}\)/\1\n/g' | sort | uniq | tr -d "\n"`
+	if [ `echo "$chars" | grep -cx "[0-1]*"` -ge 1 ]; then
+		FROM="bin"
+	elif [ `echo "$chars" | grep -cx "[0-9A-Fa-f]*"` -ge 1 ]; then
+		FROM="hex"
+	else
+		FROM="ascii"
+	fi
+}
+
+function format {
+	if [ $COL -gt 0 ]; then
+		echo "$1" | sed "s/\(.\{$COL\}\)/\1\n/g" > "$2"
+	else
+		echo "$1" > "$2"
+	fi
+}
+
+function bin_hex {
+	bin=`cat "$1" | tr -d " " | tr -d "\n" | sed 's/\(.\{4\}\)/\1\n/g'`
+	hex=""
+	hex=`echo "$bin" | sed 's/^0000$/0/g; s/^0001$/1/g; 
+				s/^0010$/2/g; s/^0011$/3/g; 
+				s/^0100$/4/g; s/^0101$/5/g; 
+				s/^0110$/6/g; s/^0111$/7/g; 
+				s/^1000$/8/g; s/^1001$/9/g; 
+				s/^1010$/A/g; s/^1011$/B/g; 
+				s/^1100$/C/g; s/^1101$/D/g; 
+				s/^1110$/E/g; s/^1111$/F/g' | tr -d '\n'` 
+	if [ $3 -eq 1 ]; then format "$hex" "$2"
+       	else echo "$hex" > "$2"
+	fi
+}
+
+function bin_ascii {
+	TMP="/tmp/`basename "$1"`.tmp"
+	eval bin_hex "$1" "$TMP" 0
+	format "`cat "$TMP" | xxd -r -p`" "$2"
+	rm "$TMP"
+}
+
+function hex_ascii {
+	ascii=`cat "$1" | tr -d " " | tr -d "\n" | xxd -r -p`
+	if [ $3 -eq 1 ]; then format "$ascii" "$2"
+       	else echo "$ascii" > "$2"
+	fi
+}
+
+function hex_bin {
+	tmp=`cat "$1" | tr [:lower:] [:upper:]`
+	tmp=`echo 'ibase=16; obase=2;'"$tmp" | bc | tr -d '\n' | tr -d '\\'`
+	n=$(( ( `echo "$tmp" | wc -c` - 1 ) % 4 ))
+	# Complete with zeros
+	if [ $n -ne 0 ]; then
+		tmp=`head -c $(( 4 - $n )) /dev/zero | tr '\0' '0'`"$tmp"
+	fi
+	format "$tmp" "$2"
+}
+
+function ascii_hex {
+	format `xxd -p "$1" | tr -d "\n"` "$2"
+}
+
+function ascii_bin {
+	bin=`xxd -b "$1" | cut -f 2-7 -d " " | tr -d " " | tr -d "\n"`
+	if [ $3 -eq 1 ]; then format "$bin" "$2"
+       	else echo "$bin" > "$2"
+	fi
+}
+
+function checkExisting {
+	if [ -r "$1" ]; then
+		echo "Output file exists. Continue? (y/N)"
+		read -r cont
+		if [ ! "$cont" ] || [ "$cont" != "y" ]; then
+			echo "Exiting..."
+			exit
+		fi
+		echo ""
+		rm -f "$1"
+	fi
+}
+
+
+# Get cmd line arguments
+if [ $# -eq 0 ]; then
+	eval printUsage
+fi
+
+for arg in $@
+do
+	case "$x" in
+		"-f" ) 
+			case "$arg" in 
+				"bin"|"hex"|"ascii") FROM="$arg" ;;
+				*) 	ERR="wrong -f format. Use bin | hex | ascii"
+					eval printUsage ;;
+			esac
+			;;
+		"-t" ) 
+			case "$arg" in 
+				"bin"|"hex"|"ascii") TO="$arg" ;;
+				*) 	ERR="wrong -t format. Use bin | hex | ascii"
+					eval printUsage ;;
+			esac
+			;;
+		"-o" )  eval checkExisting "$arg"
+			OUTF="$arg"
+			;;
+		"-i" )  INPF="$arg" 
+			;;
+		"-c" )  COL="$arg"
+			;;
+		"-h" )  eval printUsage
+			;;
+	esac
+	x="$arg"
+done
+
+## Make sure -t specified
+if [ "$TO" == "" ]; then
+	printf "Please select the output format (ascii | hex | bin): " >&2
+	read -r arg
+	case "$arg" in 
+		"bin"|"hex"|"ascii") 
+			TO="$arg" ;;
+		*) 	ERR="wrong output format. Use bin | hex | ascii"
+			eval printUsage ;;
+	esac
+fi
+
+## Autodetect input file
+if [ "$FROM" == "" ]; then
+	if [ "$INPF" == "/dev/stdin" ]; then
+		ERR="you need to enter either a file format or a file"
+		eval printUsage
+	else
+		eval autodetectFileFormat "$INPF"
+	fi
+fi
+
+## Prevent same format specified
+if [ "$FROM" == "$TO" ]; then
+	ERR="better use cp for that"
+	eval printUsage
+fi
+
+eval ${FROM}_${TO} "$INPF" "$OUTF" 1
