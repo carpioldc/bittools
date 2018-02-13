@@ -97,8 +97,8 @@ function hex_ascii {
 }
 
 function hex_bin {
-	tmp=`cat "$1" | tr [:lower:] [:upper:]`
-	tmp=`echo 'ibase=16; obase=2;'"$tmp" | bc | tr -d '\n' | tr -d '\\'`
+	tmp=`cat "$1" | tr [:lower:] [:upper:] | tr -d ' '`
+	tmp=`echo 'ibase=16; obase=2;'"$tmp" | bc | tr -d '\n' | tr -d '\\\'`
 	n=$(( ( `echo "$tmp" | wc -c` - 1 ) % 4 ))
 	# Complete with zeros
 	if [ $n -ne 0 ]; then
