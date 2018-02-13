@@ -1,6 +1,8 @@
 # utils
 
 Stuff made for diverse purposes. Do not judge the descriptions on  the usage strings.
+
+
 | Utility | Description | Language | Location
 |--|--|--|--|
 |**fconv**|Convert between data between text, binary and hexadecimal formats.| bash|scripts/
@@ -21,35 +23,39 @@ Stuff made for diverse purposes. Do not judge the descriptions on  the usage str
       -h  Print this help
 
 #### Example of usage
+
 Create a file
 
     $ echo "6661 7066 6170 6661 700a" > file
 
 Convert it to a text file using fconv 
 
-  $ fconv -i file -t ascii
-  fapfapfap
+    $ fconv -i file -t ascii
+    fapfapfap
 
 Alternatively, write result to a file
 
-  $ fconv -i file -t ascii -o textfile
+    $ fconv -i file -t ascii -o textfile
 
 Convert to a binary string (two ways)
 
-  $ fconv -i textfile -t bin -o binfile
-  $ cat binfile
-  01100110011000010111000001100110011000010111000001100110011000010111000000001010
-  $ scripts/fconv -i file -t bin
-  01100110011000010111000001100110011000010111000001100110011000010111000000001010
+    $ fconv -i textfile -t bin -o binfile
+    $ cat binfile
+    01100110011000010111000001100110011000010111000001100110011000010111000000001010
+    $ scripts/fconv -i file -t bin
+    01100110011000010111000001100110011000010111000001100110011000010111000000001010
 
 ## binarize
- This actually is an early fconv version, but I kept it for simplicity
- 
+
+This actually is an early fconv version, but I kept it for simplicity
+
     $ binarize
-    
+
     Unpack bytes in file to bits to easen manual pattern matching
     Usage: binarize input_file [ output_file ]
+
 #### Example of usage
+
 Create a file
 
     $ echo "fapfapfap" > me
@@ -61,8 +67,8 @@ Convert it to a binary string on a file (or alternatively to stdout)
      
 Check out the resulting string
   
-  $ cat there
-  01100110011000010111000001100110011000010111000001100110011000010111000000001010
+    $ cat there
+    01100110011000010111000001100110011000010111000001100110011000010111000000001010
 
 ## patfinder
 
@@ -74,26 +80,28 @@ Check out the resulting string
       file_to_match: received file, where the pattern must be found
 
 #### Building
-  $ cd patfinder/
-  $ make
+
+    $ cd patfinder/
+    $ make
 
 #### Example of usage
+
 Sample files: one containing pattern, the other 
 
-  $ echo "sample text" > sample
-  $ echo "dshkjsgdhkl sam kgds hgd sample textsdjf"> longsequence
+    $ echo "sample text" > sample
+    $ echo "dshkjsgdhkl sam kgds hgd sample textsdjf"> longsequence
   
 Simulate symbol offset
 
-  $ fconv -i longsequence -t bin -o longsequence.bin
-  $ sed -i 's/^/111/' longsequence.bin
-  $ fconv -i longsequence.bin -t ascii -o longsequence.dat
+    $ fconv -i longsequence -t bin -o longsequence.bin
+    $ sed -i 's/^/111/' longsequence.bin
+    $ fconv -i longsequence.bin -t ascii -o longsequence.dat
 
 Search first 4 bytes of the pattern
     
-  $ patfinder 4 sample longsequence.dat
+    $ patfinder 4 sample longsequence.dat
      
-  File: sample. Pattern to match:
+    File: sample. Pattern to match:
         'sampl'
         0x73 0x61 0x6d 0x70 0x6c
     Searching longsequence.dat
@@ -102,4 +110,3 @@ Search first 4 bytes of the pattern
         sample textsdjf�
 
 Note the output does not contain exclusively the sample, but also the rest of the file.
-
