@@ -1,13 +1,12 @@
-# utils
+# Easen bit-level file operations
 
-Stuff made for diverse purposes. Do not judge the descriptions on  the usage strings.
-
+This tools were intended to help debugging SDR communications easier on my BSc thesis. Here's the list:
 
 | Utility | Description | Language | Location
 |--|--|--|--|
 |**fconv**|Convert between data between text, binary and hexadecimal formats.| bash|scripts/
 |**binarize**|Converts data to stream of bits in a text file | bash | scripts/
-|**patfinder**| Bit-oriented file comparison. Designed to synchronize symbols from raw demodulated data on wireless communications. | C | patfinder/
+|**patfinder**| Designed to synchronize symbols from raw demodulated data on wireless communications | C | patfinder/
 
 ## fconv
 
@@ -42,7 +41,7 @@ Convert to a binary string (two ways)
     $ fconv -i textfile -t bin -o binfile
     $ cat binfile
     01100110011000010111000001100110011000010111000001100110011000010111000000001010
-    $ scripts/fconv -i file -t bin
+    $ fconv -i file -t bin
     01100110011000010111000001100110011000010111000001100110011000010111000000001010
 
 ## binarize
@@ -71,6 +70,10 @@ Check out the resulting string
     01100110011000010111000001100110011000010111000001100110011000010111000000001010
 
 ## patfinder
+
+Searches for the beginning of a bit sequence on a file. When matched, dumps the contents of the file from the beginning of the pattern on.
+
+Note this tool does not try to match the whole pattern, but just the first N\*8 bits.
 
     $ patfinder
     
